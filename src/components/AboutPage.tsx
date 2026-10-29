@@ -63,8 +63,8 @@ export function AboutPage() {
             <ul className="text-sm text-slate-600 mt-2 space-y-1 ml-4">
               <li><strong className="text-emerald-700">Evidence found</strong> — at least one potentially relevant pattern was detected</li>
               <li><strong className="text-gray-600">Not found in inspected files</strong> — no matching patterns in the files examined</li>
-              <li><strong className="text-amber-700">Needs further assessment</strong> — inspection was limited or evidence was ambiguous</li>
-              <li><strong className="text-red-700">Inspection incomplete</strong> — the inspection could not be completed (e.g., API errors)</li>
+              <li><strong className="text-amber-700">Needs further assessment</strong> — available artifacts are insufficient for a meaningful conclusion</li>
+              <li><strong className="text-red-700">Inspection incomplete</strong> — the inspection did not complete sufficiently for a reliable conclusion</li>
             </ul>
           </div>
         </div>
@@ -151,6 +151,34 @@ export function AboutPage() {
         </div>
       </section>
 
+      {/* Evidence Categories */}
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold text-slate-800 mb-3">Evidence Categories</h2>
+        <p className="text-sm text-slate-600 mb-4">
+          Each evidence finding is classified into a category to help you understand what type of artifact was found:
+        </p>
+        <div className="grid sm:grid-cols-2 gap-3">
+          {[
+            { label: 'Source code', desc: 'Actual code patterns, functions, classes, or implementations' },
+            { label: 'Configuration', desc: 'Project configuration files, settings, or build definitions' },
+            { label: 'Dependency declaration', desc: 'Package manifests or import statements referencing relevant libraries' },
+            { label: 'Test', desc: 'Test files, assertions, or testing framework usage' },
+            { label: 'Documentation', desc: 'README files, comments, or documentation references' },
+            { label: 'Infrastructure', desc: 'CI/CD pipelines, Docker files, cloud configurations, deployment scripts' },
+            { label: 'Project structure', desc: 'Directory layout or file organization patterns' },
+          ].map(cat => (
+            <div key={cat.label} className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+              <p className="text-sm font-medium text-slate-700">{cat.label}</p>
+              <p className="text-xs text-slate-500">{cat.desc}</p>
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-slate-500 mt-3">
+          These categories describe the <em>type</em> of artifact found, not its quality or significance. 
+          A dependency declaration does not prove correct usage; a source code pattern does not prove proficiency.
+        </p>
+      </section>
+
       {/* Evidence Status Definitions */}
       <section className="mb-10">
         <h2 className="text-xl font-semibold text-slate-800 mb-3">Evidence Status Definitions</h2>
@@ -174,15 +202,17 @@ export function AboutPage() {
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
             <h3 className="font-semibold text-amber-800 text-sm">Needs Further Assessment</h3>
             <p className="text-xs text-amber-700 mt-1">
-              Evidence is ambiguous or insufficient to draw any conclusion. This may occur when inspection 
-              was limited (not all files examined) or when patterns found are too generic to be meaningful.
+              The available artifacts are insufficient to support a meaningful conclusion without additional 
+              examination or practical assessment. This may occur when inspection was limited or when 
+              patterns found are too generic to be meaningful.
             </p>
           </div>
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <h3 className="font-semibold text-red-800 text-sm">Inspection Incomplete</h3>
             <p className="text-xs text-red-700 mt-1">
-              The inspection could not be completed due to technical limitations (e.g., API rate limits, 
-              timeouts, network errors). Results should not be relied upon.
+              The inspection did not complete sufficiently to support a reliable overall conclusion. This 
+              may occur when API rate limits are reached, files fail to load, or the inspection budget is 
+              exhausted before all relevant files are examined. Results should not be relied upon.
             </p>
           </div>
         </div>

@@ -2,9 +2,18 @@
 
 export type EvidenceStatus =
   | 'evidence_found'
-  | 'not_found'
-  | 'needs_assessment'
+  | 'not_found_in_inspected_files'
+  | 'needs_further_assessment'
   | 'inspection_incomplete';
+
+export type EvidenceCategory =
+  | 'source_code'
+  | 'configuration'
+  | 'dependency'
+  | 'test'
+  | 'documentation'
+  | 'infrastructure'
+  | 'project_structure';
 
 export interface EvidenceItem {
   file: string;
@@ -12,6 +21,7 @@ export interface EvidenceItem {
   htmlUrl: string;
   snippet: string;
   relevance: string;
+  category: EvidenceCategory;
 }
 
 export interface SkillResult {
@@ -21,6 +31,8 @@ export interface SkillResult {
   limitations: string[];
   filesInspected: number;
   totalFilesAvailable: number;
+  inspectionComplete: boolean;
+  statusExplanation: string;
 }
 
 export interface AnalysisResult {
@@ -33,8 +45,10 @@ export interface AnalysisResult {
     totalFilesInRepo: number;
     filesInspected: number;
     filesSkipped: number;
+    filesFailedToLoad: number;
     inspectionTimestamp: string;
     apiCallsMade: number;
+    inspectionComplete: boolean;
   };
 }
 
