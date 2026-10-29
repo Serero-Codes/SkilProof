@@ -4,9 +4,10 @@ import { getStatusLabel, getStatusColor, getCategoryLabel } from '../utils/evide
 interface ResultsPageProps {
   results: AnalysisResult;
   onNewAnalysis: () => void;
+  onAbout: () => void;
 }
 
-export function ResultsPage({ results, onNewAnalysis }: ResultsPageProps) {
+export function ResultsPage({ results, onNewAnalysis, onAbout }: ResultsPageProps) {
   const { skills, inspectionSummary, owner, repo, repoUrl } = results;
 
   const evidenceCount = skills.filter(s => s.status === 'evidence_found').length;
@@ -38,7 +39,7 @@ export function ResultsPage({ results, onNewAnalysis }: ResultsPageProps) {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => window.location.hash = '#about'}
+              onClick={onAbout}
               className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-slate-800 border border-slate-300 px-3 py-2 rounded-lg"
             >
               How to interpret
@@ -81,7 +82,7 @@ export function ResultsPage({ results, onNewAnalysis }: ResultsPageProps) {
         <h2 className="text-lg font-semibold text-slate-800 mb-3">Inspection Summary</h2>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 text-sm">
           <div>
-            <p className="text-slate-500">Files in repo</p>
+            <p className="text-slate-500">Files discovered in scan</p>
             <p className="font-semibold text-slate-800">{inspectionSummary.totalFilesInRepo}</p>
           </div>
           <div>
@@ -115,8 +116,7 @@ export function ResultsPage({ results, onNewAnalysis }: ResultsPageProps) {
         </div>
         {!inspectionSummary.inspectionComplete && (
           <p className="text-xs text-amber-700 mt-2 bg-amber-50 p-2 rounded border border-amber-100">
-            <strong>Inspection was limited.</strong> Not all repository files could be examined due to
-            inspection bounds (max 50 files, max 30 API calls). Results for some skills may be incomplete.
+            <strong>Inspection was limited.</strong> Not all discovered files could be read. The scan may have reached its safety limits, encountered a GitHub API issue, or skipped files by design. Results for some skills may be incomplete.
             This does not mean evidence doesn't exist — it may be in uninspected files.
           </p>
         )}
@@ -143,7 +143,7 @@ export function ResultsPage({ results, onNewAnalysis }: ResultsPageProps) {
                 {skillResult.statusExplanation}
               </p>
               <p className="text-xs text-slate-500 mt-1">
-                {skillResult.filesInspected} files inspected ({skillResult.totalFilesAvailable} total in repo)
+                {skillResult.filesInspected} files read successfully ({skillResult.totalFilesAvailable} files discovered in the scan)
                 {!skillResult.inspectionComplete && ' — inspection was limited'}
               </p>
             </div>

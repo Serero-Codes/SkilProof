@@ -47,6 +47,7 @@ export default function App() {
           <ResultsPage
             results={results}
             onNewAnalysis={handleNewAnalysis}
+            onAbout={() => handleNavigate('about')}
           />
         )}
         {currentPage === 'results' && !results && (

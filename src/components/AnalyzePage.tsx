@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { TECHNICAL_SKILLS } from '../types';
 import type { AnalysisResult } from '../types';
 import { validateGitHubUrl, getRepoInfo, collectFilesToInspect, getFileContent } from '../utils/github';
@@ -19,6 +19,12 @@ export function AnalyzePage({ onComplete }: AnalyzePageProps) {
   const [limitWarning, setLimitWarning] = useState<string>('');
   const abortRef = useRef<AbortController | null>(null);
   const analysisIdRef = useRef<number>(0);
+
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
 
   const toggleSkill = (skill: string) => {
     setLimitWarning('');
@@ -82,7 +88,7 @@ export function AnalyzePage({ onComplete }: AnalyzePageProps) {
       setProgress('Fetching repository information...');
 
       if (currentAbort.signal.aborted) return;
-      const repoInfo = await getRepoInfo(owner!, repo!);
+      const repoInfo = await getRepoInfo(owner!, repo!, apiCallCount, currentAbort.signal);
 
       // Check if this analysis is still current
       if (currentAnalysisId !== analysisIdRef.current) return;
@@ -98,15 +104,18 @@ export function AnalyzePage({ onComplete }: AnalyzePageProps) {
       setProgress('Discovering repository files...');
 
       if (currentAbort.signal.aborted) return;
-      const { inspectable, skipped, total, inspectionComplete } = await collectFilesToInspect(owner!, repo!, apiCallCount);
+      const { inspectable, skipped, total, inspectionComplete: traversalComplete } = await collectFilesToInspect(owner!, repo!, apiCallCount, currentAbort.signal);
+      let inspectionComplete = traversalComplete;
 
       if (currentAnalysisId !== analysisIdRef.current) return;
 
       if (inspectable.length === 0) {
-        if (total === 0) {
-          setError('This repository appears to be empty. No files were found to inspect.');
+        if (total === 0 && inspectionComplete) {
+          setError('No files were found in the repository root or inspected folders. The repository may be empty.');
+        } else if (!inspectionComplete) {
+          setError('SkillProof could not inspect enough files to continue. The scan may have reached a safety limit or encountered a GitHub API issue. Please try again.');
         } else {
-          setError('No inspectable text files were found. The repository may contain only binary files, generated artifacts, or files in excluded directories.');
+          setError('No inspectable text files were found. The repository may contain only binary files, oversized files, generated artifacts, or excluded files.');
         }
         setState('error');
         return;
@@ -124,17 +133,31 @@ export function AnalyzePage({ onComplete }: AnalyzePageProps) {
         setProgress(`Reading file ${i + 1} of ${inspectable.length}...`);
 
         if (file.download_url) {
-          const content = await getFileContent(file.download_url, apiCallCount);
-          if (content) {
+          let content: string | null = null;
+          try {
+            content = await getFileContent(file.download_url, apiCallCount, currentAbort.signal);
+          } catch (readError) {
+            if (readError instanceof DOMException && readError.name === 'AbortError') throw readError;
+            // A failed file should not erase evidence successfully read from other files.
+            inspectionComplete = false;
+          }
+          if (content !== null) {
             filesWithContent.push({
               file: { name: file.name, path: file.path, html_url: file.html_url },
               content,
             });
           } else {
             filesFailedToLoad++;
+            inspectionComplete = false;
           }
         } else {
           filesFailedToLoad++;
+          inspectionComplete = false;
+        }
+        if (apiCallCount.count >= 30 && i < inspectable.length - 1) {
+          filesFailedToLoad += inspectable.length - i - 1;
+          inspectionComplete = false;
+          break;
         }
       }
 
@@ -157,7 +180,7 @@ export function AnalyzePage({ onComplete }: AnalyzePageProps) {
         selectedSkills,
         filesWithContent,
         total,
-        inspectable.length,
+        filesWithContent.length,
         inspectionComplete
       );
 
@@ -171,7 +194,7 @@ export function AnalyzePage({ onComplete }: AnalyzePageProps) {
         skills,
         inspectionSummary: {
           totalFilesInRepo: total,
-          filesInspected: inspectable.length,
+          filesInspected: filesWithContent.length,
           filesSkipped: skipped,
           filesFailedToLoad,
           inspectionTimestamp: new Date().toISOString(),
